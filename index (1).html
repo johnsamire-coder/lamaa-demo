@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>تطبيق لمعة</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@500;700&display=swap">
+<style>
+/* Layout: a single phone-sized app column, framed on wide screens, edge to edge on phones */
+:root{
+  --bg:#e7eef0; --surface:#ffffff; --sunk:#f3f7f8; --ink:#0f2a33; --muted:#5a717b; --line:#d6e1e5;
+  --accent:#0b7c88; --accent-ink:#ffffff; --soft:#dff1f3; --warm:#d9822b; --warm-soft:#fbeedd; --good:#2e8b57; --good-soft:#e2f3e8;
+  --street:#d3dde1; --block:#eef3f4;
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1316; --surface:#121d21; --sunk:#0e181b; --ink:#e4eef0; --muted:#8ba2aa; --line:#23343a;
+  --accent:#3fbfcb; --accent-ink:#05262a; --soft:#133238; --warm:#efa45a; --warm-soft:#3a2a18; --good:#5cc48a; --good-soft:#163222;
+  --street:#24353b; --block:#162327; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1316; --surface:#121d21; --sunk:#0e181b; --ink:#e4eef0; --muted:#8ba2aa; --line:#23343a;
+  --accent:#3fbfcb; --accent-ink:#05262a; --soft:#133238; --warm:#efa45a; --warm-soft:#3a2a18; --good:#5cc48a; --good-soft:#163222;
+  --street:#24353b; --block:#162327; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px;box-sizing:border-box}
+*{box-sizing:border-box}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stage{display:flex;flex-direction:column;align-items:center;gap:10px;height:100%}
+.note{font-size:13px;color:var(--muted);text-align:center}
+.phone{width:100%;max-width:400px;height:min(840px,100%);background:var(--surface);border:1px solid var(--line);border-radius:30px;
+  overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 20px 50px -25px rgba(10,40,50,.35)}
+@media (max-width:520px){
+  body{padding-block:0;padding-left:0;padding-right:0}
+  .note{display:none}
+  .phone{max-width:none;height:100%;border:0;border-radius:0;box-shadow:none}
+}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 max(16px,env(safe-area-inset-left,0px)) 20px}
+.hdr{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:8px;padding:14px 16px 10px;border-bottom:1px solid var(--line);background:var(--surface)}
+.hdr h2{margin:0;font-family:var(--f-display);font-size:17px;font-weight:700;text-wrap:balance}
+.back{width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--sunk);font-size:18px}
+.step{font-size:12px;color:var(--muted);background:var(--sunk);padding:3px 9px;border-radius:999px;font-variant-numeric:tabular-nums}
+h3{font-family:var(--f-display);font-size:15px;margin:22px 0 10px;font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:14px;font-weight:700;background:var(--accent);color:var(--accent-ink);font-size:15px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:var(--sunk);color:var(--ink);border:1px solid var(--line)}
+.btn.warm{background:var(--warm);color:#fff}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field label{font-size:13px;color:var(--muted)}
+.field input{border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:12px 14px;width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 16px;font-weight:600}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.bar{border-top:1px solid var(--line);background:var(--surface);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+.barrow{display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums}
+.total{font-family:var(--f-display);font-size:22px;font-weight:700}
+.toast{position:absolute;inset-inline:16px;bottom:96px;background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:12px;font-size:13px;z-index:5}
+
+/* home */
+.brand{display:flex;align-items:center;justify-content:space-between;padding:18px 0 4px}
+.word{font-family:var(--f-display);font-size:26px;font-weight:700;letter-spacing:0}
+.word i{font-style:normal;color:var(--accent)}
+.hero{margin-top:12px;border-radius:22px;padding:20px;background:var(--soft);position:relative;overflow:hidden}
+.hero h1{font-family:var(--f-display);font-size:23px;line-height:1.35;margin:0 0 6px;text-wrap:balance}
+.hero p{margin:0 0 16px;color:var(--muted);font-size:14px}
+.hero .drops{position:absolute;inset-inline-start:-20px;top:-20px;width:140px;height:140px;opacity:.5}
+.hero .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative}
+.bundle{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--surface);width:100%;text-align:start;margin-bottom:10px}
+.bundle b{font-family:var(--f-display);display:block}
+.off{background:var(--warm-soft);color:var(--warm);font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav button{border:0;background:none;padding:10px 4px 12px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav button.on{color:var(--accent);font-weight:700}
+.nav svg{width:22px;height:22px}
+
+/* car & map */
+.cars{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.car{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:600}
+.car svg{height:34px;color:var(--muted)}
+.car.on{border-color:var(--accent);background:var(--soft)}
+.car.on svg{color:var(--accent)}
+.car small{font-weight:400;color:var(--muted);font-size:12px}
+.map{height:150px;border-radius:16px;border:1px solid var(--line);position:relative;overflow:hidden;margin-bottom:12px;
+  background:
+   linear-gradient(90deg,transparent 46%,var(--street) 46%,var(--street) 54%,transparent 54%),
+   linear-gradient(0deg,transparent 30%,var(--street) 30%,var(--street) 37%,transparent 37%),
+   linear-gradient(0deg,transparent 72%,var(--street) 72%,var(--street) 78%,transparent 78%),
+   linear-gradient(90deg,transparent 14%,var(--street) 14%,var(--street) 18%,transparent 18%),
+   var(--block)}
+.pin{position:absolute;left:62%;top:44%;transform:translate(-50%,-100%);color:var(--warm)}
+.maplabel{position:absolute;bottom:8px;inset-inline-start:8px;background:var(--surface);border:1px solid var(--line);font-size:12px;padding:4px 10px;border-radius:999px}
+.van{position:absolute;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;transform:translate(-50%,-50%);
+  animation:drive 12s linear infinite}
+.van svg{width:16px;height:16px}
+@keyframes drive{0%{left:16%;top:85%}35%{left:16%;top:34%}70%{left:50%;top:34%}100%{left:62%;top:40%}}
+@media (prefers-reduced-motion:reduce){.van{animation:none;left:50%;top:34%}}
+
+/* services */
+.svc{display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:start;border:1px solid var(--line);border-radius:16px;padding:13px;background:var(--surface);width:100%;text-align:start;margin-bottom:8px}
+.svc.on{border-color:var(--accent);background:var(--soft)}
+.box{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;margin-top:2px;background:var(--surface)}
+.svc.on .box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.svc b{display:block;font-weight:700}
+.svc .d{font-size:13px;color:var(--muted);display:block}
+.svc .p{text-align:end;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.svc .p small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);margin-top:4px}
+
+/* time */
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--sunk);border:1px solid var(--line);border-radius:14px;padding:4px;margin-top:16px}
+.seg button{border:0;background:none;border-radius:10px;padding:10px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.days{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.day{flex:0 0 auto;border:1px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--surface);text-align:center;min-width:64px}
+.day b{display:block;font-family:var(--f-display);font-size:18px;font-variant-numeric:tabular-nums}
+.day span{font-size:12px;color:var(--muted)}
+.day.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.day.on span{color:var(--accent-ink)}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{border:1px solid var(--line);border-radius:12px;padding:10px 4px;background:var(--surface);font-variant-numeric:tabular-nums;font-weight:600}
+.slot.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.slot:disabled{background:var(--sunk);color:var(--muted);text-decoration:line-through;opacity:.6;cursor:not-allowed}
+.xcard{margin-top:16px;border-radius:18px;padding:18px;background:var(--warm-soft);display:flex;flex-direction:column;gap:6px}
+.xcard b{font-family:var(--f-display);font-size:18px}
+
+/* review */
+.card{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--surface)}
+.line{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-variant-numeric:tabular-nums}
+.line + .line{border-top:1px dashed var(--line)}
+.line.disc{color:var(--good)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.pay{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pay button{border:1px solid var(--line);border-radius:14px;padding:12px 6px;background:var(--surface);font-weight:600;font-size:13px}
+.pay button.on{border-color:var(--accent);background:var(--soft)}
+.promo{display:flex;gap:8px}
+.promo input{flex:1;min-width:0;border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:10px 12px}
+.promo button{border:0;border-radius:12px;padding:0 16px;background:var(--ink);color:var(--surface);font-weight:600}
+
+/* tracking */
+.steps{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.steps li{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;padding-bottom:14px;position:relative;color:var(--muted)}
+.steps li::before{content:"";position:absolute;inset-inline-start:12px;top:24px;bottom:0;width:2px;background:var(--line)}
+.steps li:last-child::before{display:none}
+.steps .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:12px;position:relative;z-index:1}
+.steps li.done{color:var(--ink)}
+.steps li.done .dot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.steps li.now{color:var(--ink);font-weight:700}
+.steps li.now .dot{border-color:var(--accent)}
+.tech{display:flex;align-items:center;gap:12px}
+.ava{width:44px;height:44px;border-radius:50%;background:var(--soft);color:var(--accent);display:grid;place-items:center;font-family:var(--f-display);font-weight:700}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ph{aspect-ratio:4/3;max-width:100%;border-radius:12px;border:1px dashed var(--line);background:var(--sunk);display:grid;place-items:center;color:var(--muted);font-size:13px}
+.stars{display:flex;gap:6px;justify-content:center}
+.stars button{border:0;background:none;font-size:30px;color:var(--line);padding:0 2px}
+.stars button.on{color:var(--warm)}
+
+/* orders/admin */
+.pill{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.pill.go{background:var(--soft);color:var(--accent)}
+.pill.ok{background:var(--good-soft);color:var(--good)}
+.pill.x{background:var(--warm-soft);color:var(--warm)}
+.ord{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ord + .ord{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.ex{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-inline-start:6px}
+.ptable{width:100%;border-collapse:collapse;font-size:14px}
+.ptable td{padding:7px 0;border-bottom:1px solid var(--line)}
+.ptable input{width:92px;border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:7px 8px;text-align:center;font-variant-numeric:tabular-nums}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+.done-hero{text-align:center;padding:10px 0 4px}
+.done-hero .big{width:64px;height:64px;border-radius:50%;background:var(--good-soft);color:var(--good);display:grid;place-items:center;margin:0 auto 8px;font-size:30px}
+</style>
+
+</head>
+<body>
+<div class="stage" dir="rtl" lang="ar">
+  <div class="note">ديمو تفاعلي — جرّبه كأنك العميل. الأرقام والطلبات اللي فيه أمثلة.</div>
+  <div class="phone" id="app"></div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const IC={
+ car:'<svg viewBox="0 0 64 28" fill="currentColor"><path d="M6 20c0-3 1-5 4-6l8-7c2-2 4-3 7-3h14c3 0 5 1 7 3l7 7c4 1 6 3 6 6v3H6z" opacity=".9"/><circle cx="17" cy="23" r="5" fill="var(--surface)" stroke="currentColor" stroke-width="3"/><circle cx="48" cy="23" r="5" fill="var(--surface)" stroke="currentColor" stroke-width="3"/></svg>',
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+ gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 00-2-1.2L14 3h-4l-.5 2.6a7 7 0 00-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 005 12a7 7 0 00.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 002 1.2L10 21h4l.5-2.6a7 7 0 002-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0019 12z"/></svg>',
+ pin:'<svg width="30" height="36" viewBox="0 0 24 30" fill="currentColor"><path d="M12 0C6 0 1.5 4.5 1.5 10.5 1.5 18 12 30 12 30s10.5-12 10.5-19.5C22.5 4.5 18 0 12 0z"/><circle cx="12" cy="10.5" r="4" fill="var(--surface)"/></svg>',
+ van:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 7h12v9H2zM14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
+ check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M5 12l5 5L20 7"/></svg>'
+};
+const AREAS=[{id:'nasr',n:'مدينة نصر'},{id:'obour',n:'العبور'},{id:'madinaty',n:'مدينتي'}];
+const CARS=[{id:'hatch',n:'هاتشباك',m:.9,w:26},{id:'sedan',n:'سيدان',m:1,w:32},{id:'suv',n:'جيب / SUV',m:1.2,w:36},{id:'lux',n:'عربية فارهة',m:1.4,w:38}];
+const CATS=[['wash','الغسيل'],['detail','الديتيلنج والتلميع'],['extra','خدمات إضافية']];
+const SERV=[
+ {id:'ext',n:'غسيل خارجي',d:'رغوة وشطف وتنشيف وشمع سريع',min:45,size:1,cat:'wash'},
+ {id:'int',n:'غسيل داخلي',d:'شفط وتنضيف التابلوه والزجاج من جوه',min:40,size:1,cat:'wash'},
+ {id:'engine',n:'غسيل موتور',d:'بالبخار ومواد آمنة على الكهربا',min:30,size:0,cat:'wash'},
+ {id:'extd',n:'ديتيلنج خارجي',d:'إزالة الشوائب وتلميع البوية، وبيشمل الغسيل الخارجي',min:180,size:1,cat:'detail',rep:'ext'},
+ {id:'intd',n:'ديتيلنج داخلي',d:'غسيل الفرش والسقف وتعقيم، وبيشمل الغسيل الداخلي',min:180,size:1,cat:'detail',rep:'int'},
+ {id:'polish',n:'تلميع وحماية بالواكس',d:'طبقة حماية ولمعان بيستمر أسابيع',min:90,size:1,cat:'detail'},
+ {id:'lights',n:'تلميع الفوانيس',d:'بيرجّع وضوح الفانوس الأمامي',min:30,size:0,cat:'extra'},
+ {id:'oil',n:'تغيير زيت وفلتر',d:'المصنعية بس، والزيت والفلتر حسب العربية',min:30,size:0,cat:'extra'}
+];
+const S_BY=Object.fromEntries(SERV.map(s=>[s.id,s]));
+const BASE={ext:150,int:120,engine:200,extd:800,intd:900,polish:1500,lights:200,oil:250};
+const r10=n=>Math.round(n/10)*10;
+const PRICES={
+ nasr:{...BASE},
+ obour:Object.fromEntries(Object.entries(BASE).map(([k,v])=>[k,r10(v*.9)])),
+ madinaty:Object.fromEntries(Object.entries(BASE).map(([k,v])=>[k,r10(v*1.1)]))
+};
+const EXPRESS={nasr:100,obour:80,madinaty:120};
+const BUNDLES=[
+ {id:'basic',n:'الباقة الأساسية',d:'غسيل خارجي + داخلي',items:['ext','int'],off:10},
+ {id:'vip',n:'باقة VIP',d:'خارجي + داخلي + موتور + فوانيس',items:['ext','int','engine','lights'],off:15}
+];
+const STATUSES=['اتأكد الطلب','الفني في الطريق','الفني وصل','بدأ الشغل','الشغل خلص'];
+
+const S={screen:'login',otp:false,phone:'',area:null,car:'sedan',addr:{street:'',bld:'',mark:''},sel:new Set(),
+ mode:'scheduled',day:0,slot:null,pay:'cash',promo:'',promoOk:false,orders:[],cur:null,adminTab:'orders',adminArea:'nasr',toast:''};
+
+const fmt=n=>Math.round(n).toLocaleString('en-US')+' ج.م';
+const dur=m=>{const h=Math.floor(m/60),mm=m%60;return (h?h+' س':'')+(h&&mm?' و':'')+(mm?mm+' د':'')};
+const areaName=id=>(AREAS.find(a=>a.id===id)||{}).n||'';
+const carObj=()=>CARS.find(c=>c.id===S.car);
+function price(id,area=S.area,car=S.car){const b=PRICES[area||'nasr'][id];const m=S_BY[id].size?CARS.find(c=>c.id===car).m:1;return r10(b*m)}
+function calc(){
+ const items=[...S.sel];let sub=0,mins=0;items.forEach(i=>{sub+=price(i);mins+=S_BY[i].min});
+ let disc=0,bun=null;BUNDLES.forEach(b=>{if(b.items.every(i=>S.sel.has(i))){const d=b.items.reduce((a,i)=>a+price(i),0)*b.off/100;if(d>disc){disc=d;bun=b}}});
+ const ex=S.mode==='express'?EXPRESS[S.area||'nasr']:0;
+ const promo=S.promoOk?(sub-disc)*.1:0;
+ return {items,sub,mins,disc,bun,ex,promo,total:sub-disc+ex-promo};
+}
+function days(){const out=[];const t=new Date();for(let i=0;i<7;i++){const d=new Date(t);d.setDate(t.getDate()+i);
+ out.push({i,num:d.getDate(),lbl:i===0?'النهارده':i===1?'بكره':d.toLocaleDateString('ar-EG',{weekday:'long'}),full:d.toLocaleDateString('ar-EG',{weekday:'long'})+' '+d.getDate()+'/'+(d.getMonth()+1)})}return out}
+const HOURS=[9,10,11,12,13,14,15,16,17,18,19,20,21];
+const hourLbl=h=>(h>12?h-12:h)+':00 '+(h<12?'ص':'م');
+function busy(day,h){return ((day+1)*7+h*3)%5===0}
+function slotOk(day,h,mins){if(busy(day,h))return false;if(h+Math.ceil(mins/60)>22)return false;if(day===0&&h<=new Date().getHours()+1)return false;return true}
+
+function hdr(t,back,step){return `<header class="hdr">${back?`<button class="back" data-act="go" data-v="${back}" aria-label="رجوع">→</button>`:'<span></span>'}<h2>${t}</h2>${step?`<span class="step">${step}</span>`:'<span></span>'}</header>`}
+function nav(on){return `<nav class="nav"><button class="${on==='home'?'on':''}" data-act="go" data-v="home">${IC.home}الرئيسية</button><button class="${on==='orders'?'on':''}" data-act="go" data-v="orders">${IC.list}طلباتي</button><button class="${on==='admin'?'on':''}" data-act="go" data-v="admin">${IC.gear}الإدارة</button></nav>`}
+
+const V={
+login(){return `<div class="scroll" style="display:flex;flex-direction:column;justify-content:center;gap:6px">
+ <div style="text-align:center;margin-bottom:24px"><div class="word" style="font-size:40px">لمعة<i>.</i></div><div class="muted">عربيتك تتغسل وانت في البيت</div></div>
+ <div class="field"><label for="ph">رقم الموبايل</label><input id="ph" inputmode="tel" dir="ltr" placeholder="01xxxxxxxxx" data-bind="phone" value="${S.phone}"></div>
+ ${S.otp?`<div class="field"><label for="otp">كود التأكيد اللي وصلك في رسالة</label><input id="otp" inputmode="numeric" dir="ltr" maxlength="4" placeholder="• • • •"><span class="small muted">في الديمو اكتب أي 4 أرقام</span></div>
+ <button class="btn" data-act="login">دخول</button>`:`<button class="btn" data-act="otp">ابعتلي كود</button>`}
+ </div>`},
+home(){const last=S.orders[0];return `<div class="scroll">
+ <div class="brand"><div class="word">لمعة<i>.</i></div>${S.area?`<button class="chip" data-act="go" data-v="car">📍 ${areaName(S.area)}</button>`:''}</div>
+ <section class="hero"><svg class="drops" viewBox="0 0 100 100" fill="var(--accent)" opacity=".25"><path d="M50 10C40 30 30 42 30 55a20 20 0 0040 0c0-13-10-25-20-45z"/></svg>
+  <h1>عربيتك تتغسل تحت البيت</h1><p>اختار المنطقة والخدمات والميعاد، والفني يجيلك لحد عندك.</p>
+  <div class="row"><button class="btn" data-act="start" data-v="scheduled">احجز ميعاد</button><button class="btn warm" data-act="start" data-v="express">طلب مستعجل</button></div>
+ </section>
+ ${last?`<h3>آخر طلب</h3><button class="bundle" data-act="open" data-v="${last.no}"><span><b>طلب ${last.no}</b><span class="small muted">${last.items.map(i=>S_BY[i].n).join('، ')}</span></span><span class="pill ${last.st>=4?'ok':'go'}">${STATUSES[last.st]}</span></button>`:''}
+ <h3>الباقات</h3>
+ ${BUNDLES.map(b=>`<button class="bundle" data-act="bundle" data-v="${b.id}"><span><b>${b.n}</b><span class="small muted">${b.d}</span></span><span class="off">خصم ${b.off}%</span></button>`).join('')}
+ <h3>المناطق المتاحة</h3><div class="chips">${AREAS.map(a=>`<span class="chip">${a.n}</span>`).join('')}</div>
+ </div>${nav('home')}`},
+car(){return `${hdr('العربية والعنوان','home','1 من 4')}<div class="scroll">
+ <h3>المنطقة</h3><div class="chips">${AREAS.map(a=>`<button class="chip ${S.area===a.id?'on':''}" data-act="area" data-v="${a.id}">${a.n}</button>`).join('')}</div>
+ <h3>نوع العربية</h3><div class="cars">${CARS.map(c=>`<button class="car ${S.car===c.id?'on':''}" data-act="car" data-v="${c.id}"><span style="width:${c.w*2}px;display:block">${IC.car}</span>${c.n}<small>${c.m===1?'السعر الأساسي':(c.m>1?'+':'')+Math.round((c.m-1)*100)+'% على الغسيل'}</small></button>`).join('')}</div>
+ <h3>العنوان</h3>
+ <div class="map">${IC.pin.replace('<svg','<svg class="pin"')}<span class="maplabel">اسحب الخريطة لمكان العربية</span></div>
+ <div class="field"><label for="st">الشارع</label><input id="st" data-bind="addr.street" value="${S.addr.street}" placeholder="مثلًا: شارع عباس العقاد"></div>
+ <div class="field"><label for="bl">رقم العمارة والدور</label><input id="bl" data-bind="addr.bld" value="${S.addr.bld}" placeholder="عمارة 12، الدور 3"></div>
+ <div class="field"><label for="mk">علامة مميزة (اختياري)</label><input id="mk" data-bind="addr.mark" value="${S.addr.mark}" placeholder="جنب صيدلية..."></div>
+ </div><div class="bar"><button class="btn" data-act="go" data-v="services" ${S.area?'':'disabled'}>${S.area?'كمّل واختار الخدمات':'اختار المنطقة الأول'}</button></div>`},
+services(){const c=calc();return `${hdr('اختار الخدمات','car','2 من 4')}<div class="scroll">
+ <p class="small muted" style="margin:14px 0 0">الأسعار لـ ${carObj().n} في ${areaName(S.area)}</p>
+ ${CATS.map(([k,t])=>`<h3>${t}</h3>`+SERV.filter(s=>s.cat===k).map(s=>{const on=S.sel.has(s.id);return `<button class="svc ${on?'on':''}" data-act="svc" data-v="${s.id}" aria-pressed="${on}"><span class="box">${on?IC.check:''}</span><span><b>${s.n}</b><span class="d">${s.d}</span>${s.rep?`<span class="tag">بيلغي ${S_BY[s.rep].n} لو مختاره</span>`:''}</span><span class="p">${fmt(price(s.id))}<small>${dur(s.min)}</small></span></button>`}).join('')).join('')}
+ </div>${S.toast?`<div class="toast" role="status">${S.toast}</div>`:''}
+ <div class="bar">${c.disc?`<div class="barrow small" style="color:var(--good)"><span>${c.bun.n}</span><span>- ${fmt(c.disc)}</span></div>`:''}
+ <div class="barrow"><span class="muted small">${c.items.length?c.items.length+' خدمة · حوالي '+dur(c.mins):'مفيش خدمات متختارة'}</span><span class="total">${fmt(c.sub-c.disc)}</span></div>
+ <button class="btn" data-act="go" data-v="time" ${c.items.length?'':'disabled'}>كمّل واختار الميعاد</button></div>`},
+time(){const c=calc();const D=days();return `${hdr('الميعاد','services','3 من 4')}<div class="scroll">
+ <div class="seg"><button class="${S.mode==='scheduled'?'on':''}" data-act="mode" data-v="scheduled">ميعاد محدد</button><button class="${S.mode==='express'?'on':''}" data-act="mode" data-v="express">مستعجل</button></div>
+ ${S.mode==='scheduled'?`<h3>اليوم</h3><div class="days">${D.map(d=>`<button class="day ${S.day===d.i?'on':''}" data-act="day" data-v="${d.i}"><b>${d.num}</b><span>${d.lbl}</span></button>`).join('')}</div>
+ <h3>الساعة</h3><p class="small muted" style="margin:-4px 0 10px">الشغل هياخد حوالي ${dur(c.mins)}، فالمواعيد اللي مش هتلحق اتقفلت</p>
+ <div class="slots">${HOURS.map(h=>{const ok=slotOk(S.day,h,c.mins);return `<button class="slot ${S.slot===h?'on':''}" data-act="slot" data-v="${h}" ${ok?'':'disabled'}>${hourLbl(h)}</button>`}).join('')}</div>`
+ :`<div class="xcard"><b>أقرب فني هيوصلك خلال 60 لـ 90 دقيقة</b><span class="small">رسوم الطلب المستعجل في ${areaName(S.area)}: ${fmt(EXPRESS[S.area])}</span><span class="small muted">لو مفيش فني فاضي في منطقتك هنكلمك نحدد أقرب ميعاد</span></div>`}
+ </div><div class="bar"><button class="btn" data-act="go" data-v="review" ${S.mode==='express'||S.slot!=null?'':'disabled'}>راجع الطلب</button></div>`},
+review(){const c=calc();const D=days();return `${hdr('مراجعة الطلب','time','4 من 4')}<div class="scroll">
+ <h3>التفاصيل</h3><div class="card"><dl class="kv" style="margin:0">
+  <dt>المنطقة</dt><dd>${areaName(S.area)}</dd><dt>العنوان</dt><dd>${[S.addr.street,S.addr.bld].filter(Boolean).join('، ')||'<span class="muted">مكتوبش</span>'}</dd>
+  <dt>العربية</dt><dd>${carObj().n}</dd><dt>الميعاد</dt><dd>${S.mode==='express'?'مستعجل، خلال 60–90 دقيقة':D[S.day].full+' الساعة '+hourLbl(S.slot)}</dd></dl></div>
+ <h3>الفاتورة</h3><div class="card">
+  ${c.items.map(i=>`<div class="line"><span>${S_BY[i].n}</span><span>${fmt(price(i))}</span></div>`).join('')}
+  ${c.disc?`<div class="line disc"><span>خصم ${c.bun.n}</span><span>- ${fmt(c.disc)}</span></div>`:''}
+  ${c.ex?`<div class="line"><span>رسوم الطلب المستعجل</span><span>${fmt(c.ex)}</span></div>`:''}
+  ${c.promo?`<div class="line disc"><span>كود الخصم</span><span>- ${fmt(c.promo)}</span></div>`:''}
+  <div class="line"><b>الإجمالي</b><b class="total" style="font-size:19px">${fmt(c.total)}</b></div></div>
+ <h3>كود خصم</h3><div class="promo"><input id="promo" dir="ltr" data-bind="promo" value="${S.promo}" placeholder="LAMAA10"><button data-act="promo">تطبيق</button></div>
+ <p class="small ${S.promoOk?'':'muted'}" style="${S.promoOk?'color:var(--good)':''};margin:6px 0 0">${S.promoOk?'تم تطبيق خصم 10%':'جرّب الكود LAMAA10 في الديمو'}</p>
+ <h3>طريقة الدفع</h3><div class="pay">${[['cash','كاش للفني'],['card','فيزا'],['wallet','محفظة / إنستاباي']].map(([k,t])=>`<button class="${S.pay===k?'on':''}" data-act="pay" data-v="${k}">${t}</button>`).join('')}</div>
+ ${S.pay!=='cash'?`<p class="small muted" style="margin:8px 0 0">في الديمو مفيش دفع حقيقي، بس هنا هتفتح صفحة الدفع.</p>`:''}
+ </div><div class="bar"><button class="btn" data-act="confirm">أكّد الحجز · ${fmt(c.total)}</button></div>`},
+track(){const o=S.cur;if(!o)return V.home();const D=days();const done=o.st>=4;return `${hdr('طلب '+o.no,'home')}<div class="scroll">
+ ${o.st===0?`<div class="done-hero"><div class="big">✓</div><b style="font-family:var(--f-display);font-size:18px">الحجز اتأكد</b><p class="small muted" style="margin:2px 0 0">${o.when}</p></div>`:''}
+ ${o.st>=1&&o.st<=2?`<div class="map" style="height:170px;margin-top:14px">${IC.pin.replace('<svg','<svg class="pin"')}<span class="van">${IC.van}</span><span class="maplabel">${o.st===1?'الفني على بعد 12 دقيقة':'الفني تحت البيت'}</span></div>`:''}
+ <h3>حالة الطلب</h3><ol class="steps">${STATUSES.map((t,i)=>`<li class="${i<o.st||done?'done':i===o.st?'now':''}"><span class="dot">${i<o.st||done?IC.check:i+1}</span><span>${t}</span></li>`).join('')}</ol>
+ <div class="card tech"><span class="ava">م</span><span style="flex:1"><b>محمود</b><span class="small muted" style="display:block">فني غسيل · 4.9 من 5</span></span><span class="small muted" dir="ltr">0100 000 0000</span></div>
+ ${done?`<h3>صور قبل وبعد</h3><div class="photos"><div class="ph">صورة قبل</div><div class="ph">صورة بعد</div></div><p class="small muted" style="margin:6px 0 0">الفني بيصورهم من تطبيقه عشان حق الطرفين</p>
+ <h3>قيّم الخدمة</h3><div class="stars">${[1,2,3,4,5].map(n=>`<button class="${o.rate>=n?'on':''}" data-act="rate" data-v="${n}" aria-label="${n} نجوم">★</button>`).join('')}</div>
+ ${o.rate?`<p class="small" style="text-align:center;color:var(--good)">شكرًا على تقييمك</p>`:''}`:`<p class="small muted" style="margin-top:12px">في الديمو الحالة بتتحرك لوحدها كل كام ثانية عشان تشوف الرحلة كاملة.</p>`}
+ <h3>الفاتورة</h3><div class="card">${o.items.map(i=>`<div class="line"><span>${S_BY[i].n}</span><span>${fmt(o.prices[i])}</span></div>`).join('')}<div class="line"><b>الإجمالي (${o.payLbl})</b><b>${fmt(o.total)}</b></div></div>
+ </div>${done?`<div class="bar"><button class="btn" data-act="again" data-v="${o.no}">اطلب نفس الطلب تاني</button></div>`:''}`},
+orders(){return `${hdr('طلباتي')}<div class="scroll">
+ ${S.orders.length?`<div class="card" style="margin-top:14px">${S.orders.map(o=>`<div class="ord" role="button" tabindex="0" data-act="open" data-v="${o.no}" style="cursor:pointer"><span><b>${o.no}</b> · ${areaName(o.area)}<span class="small muted" style="display:block">${o.items.map(i=>S_BY[i].n).join('، ')}</span><span class="small muted">${o.when}</span></span><span style="text-align:end"><span class="pill ${o.st>=4?'ok':'go'}">${STATUSES[o.st]}</span><span class="small" style="display:block;margin-top:6px;font-variant-numeric:tabular-nums">${fmt(o.total)}</span></span></div>`).join('')}</div>`
+ :`<div class="empty"><p>لسه معملتش أي طلب.</p><button class="btn" data-act="start" data-v="scheduled">احجز أول غسلة</button></div>`}
+ </div>${nav('orders')}`},
+admin(){const ex=[{no:'LM-0998',area:'nasr',items:['ext','int'],when:'النهارده 10:00 ص',total:270,st:4,pay:'كاش',ex:1},{no:'LM-0999',area:'madinaty',items:['extd','engine'],when:'النهارده 1:00 م',total:1100,st:3,pay:'فيزا',ex:1},{no:'LM-1000',area:'obour',items:['ext'],when:'النهارده 5:00 م',total:140,st:0,pay:'كاش',ex:1}];
+ const all=[...S.orders.map(o=>({...o,pay:o.payLbl})),...ex];const tot=all.reduce((a,o)=>a+o.total,0);const cash=all.filter(o=>o.pay.includes('كاش')).reduce((a,o)=>a+o.total,0);
+ return `${hdr('لوحة الإدارة')}<div class="scroll">
+ <div class="seg"><button class="${S.adminTab==='orders'?'on':''}" data-act="atab" data-v="orders">طلبات النهارده</button><button class="${S.adminTab==='prices'?'on':''}" data-act="atab" data-v="prices">الأسعار</button></div>
+ ${S.adminTab==='orders'?`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
+   <div class="card"><span class="small muted">إجمالي الطلبات</span><div class="total" style="font-size:19px;font-variant-numeric:tabular-nums">${fmt(tot)}</div></div>
+   <div class="card"><span class="small muted">كاش مع الفنيين</span><div class="total" style="font-size:19px;font-variant-numeric:tabular-nums">${fmt(cash)}</div></div></div>
+  <h3>الطلبات (${all.length})</h3><div class="card">${all.map(o=>`<div class="ord"><span><b>${o.no}</b>${o.ex?'<span class="ex">مثال</span>':''}<span class="small muted" style="display:block">${areaName(o.area)} · ${o.when}</span><span class="small muted">${o.items.map(i=>S_BY[i].n).join('، ')}</span></span><span style="text-align:end"><span class="pill ${o.st>=4?'ok':o.st>0?'go':'x'}">${STATUSES[o.st]}</span><span class="small" style="display:block;margin-top:6px;font-variant-numeric:tabular-nums">${fmt(o.total)} · ${o.pay}</span></span></div>`).join('')}</div>`
+ :`<p class="small muted" style="margin:14px 0 0">السعر الأساسي لعربية سيدان. الجيب والفارهة بيتحسبوا بالزيادة تلقائيًا. أي تعديل هنا بيظهر في التطبيق على طول.</p>
+  <h3>المنطقة</h3><div class="chips">${AREAS.map(a=>`<button class="chip ${S.adminArea===a.id?'on':''}" data-act="aarea" data-v="${a.id}">${a.n}</button>`).join('')}</div>
+  <h3>أسعار ${areaName(S.adminArea)}</h3><table class="ptable"><tbody>
+  ${SERV.map(s=>`<tr><td><label for="p-${s.id}">${s.n}</label></td><td style="text-align:end"><input id="p-${s.id}" type="number" min="0" step="10" data-bind="price:${S.adminArea}:${s.id}" value="${PRICES[S.adminArea][s.id]}"></td></tr>`).join('')}
+  <tr><td><label for="p-ex">رسوم الطلب المستعجل</label></td><td style="text-align:end"><input id="p-ex" type="number" min="0" step="10" data-bind="express:${S.adminArea}" value="${EXPRESS[S.adminArea]}"></td></tr>
+  </tbody></table>`}
+ </div>${nav('admin')}`}
+};
+
+let timer=null,toastT=null;
+function render(){$('#app').innerHTML=V[S.screen]();const sc=$('#app .scroll');if(sc&&render.keep!=null){sc.scrollTop=render.keep}render.keep=null}
+function go(s,keep){if(timer&&s!=='track'){clearInterval(timer);timer=null}if(keep){const sc=$('#app .scroll');render.keep=sc?sc.scrollTop:null}S.screen=s;render()}
+function toast(m){S.toast=m;clearTimeout(toastT);toastT=setTimeout(()=>{S.toast='';if(S.screen==='services'){go('services',1)}},2600)}
+function runTrack(){if(timer)clearInterval(timer);timer=setInterval(()=>{const o=S.cur;if(!o||o.st>=4){clearInterval(timer);timer=null;return}o.st++;if(S.screen==='track')go('track',1)},3500)}
+
+const A={
+ go:v=>go(v),
+ otp:()=>{if(!S.phone)S.phone='01012345678';S.otp=true;render()},
+ login:()=>go('home'),
+ start:v=>{S.mode=v;S.slot=null;go('car')},
+ bundle:v=>{const b=BUNDLES.find(x=>x.id===v);S.sel=new Set(b.items);S.mode='scheduled';go('car')},
+ area:v=>{S.area=v;go('car',1)},
+ car:v=>{S.car=v;go('car',1)},
+ svc:v=>{const s=S_BY[v];if(S.sel.has(v)){S.sel.delete(v)}else{S.sel.add(v);
+   if(s.rep&&S.sel.has(s.rep)){S.sel.delete(s.rep);toast('شيلنا "'+S_BY[s.rep].n+'" لأن "'+s.n+'" بيشمله')}
+   const sup=SERV.find(x=>x.rep===v&&S.sel.has(x.id));if(sup){S.sel.delete(sup.id);toast('شيلنا "'+sup.n+'" واخترنا "'+s.n+'" بداله')}}
+   S.slot=null;go('services',1)},
+ mode:v=>{S.mode=v;go('time',1)},
+ day:v=>{S.day=+v;S.slot=null;go('time',1)},
+ slot:v=>{S.slot=+v;go('time',1)},
+ pay:v=>{S.pay=v;go('review',1)},
+ promo:()=>{S.promoOk=S.promo.trim().toUpperCase()==='LAMAA10';if(!S.promoOk&&S.promo)S.promo='';go('review',1)},
+ confirm:()=>{const c=calc();const D=days();const o={no:'LM-'+(1001+S.orders.length),area:S.area,items:c.items,prices:Object.fromEntries(c.items.map(i=>[i,price(i)])),total:c.total,
+   payLbl:{cash:'كاش',card:'فيزا',wallet:'محفظة'}[S.pay],when:S.mode==='express'?'مستعجل · النهارده':D[S.day].full+' '+hourLbl(S.slot),st:0,rate:0};
+   S.orders.unshift(o);S.cur=o;S.sel=new Set();S.slot=null;S.promo='';S.promoOk=false;go('track');runTrack()},
+ open:v=>{S.cur=S.orders.find(o=>o.no===v);go('track');if(S.cur.st<4)runTrack()},
+ rate:v=>{S.cur.rate=+v;go('track',1)},
+ again:v=>{const o=S.orders.find(x=>x.no===v);S.sel=new Set(o.items);S.area=o.area;S.mode='scheduled';go('services')},
+ atab:v=>{S.adminTab=v;go('admin')},
+ aarea:v=>{S.adminArea=v;go('admin',1)}
+};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t||t.disabled)return;A[t.dataset.act](t.dataset.v)});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'){const t=e.target.closest('[role=button][data-act]');if(t)A[t.dataset.act](t.dataset.v)}});
+document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return;const v=e.target.value;
+ if(b.startsWith('addr.'))S.addr[b.slice(5)]=v;
+ else if(b.startsWith('price:')){const[,a,id]=b.split(':');const n=parseFloat(v);if(!isNaN(n))PRICES[a][id]=n}
+ else if(b.startsWith('express:')){const n=parseFloat(v);if(!isNaN(n))EXPRESS[b.split(':')[1]]=n}
+ else S[b]=v});
+render();
+})();
+</script>
+
+</body>
+</html>
